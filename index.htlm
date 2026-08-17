@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur Loto - Tu as gagné !</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        .solde { font-size: 36px; font-weight: bold; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-danger { background: #f56565; color: white; }
+        
+        .log { 
+            max-height: 200px; 
+            overflow-y: auto; 
+            font-size: 14px;
+        }
+        .log-item { 
+            padding: 10px; 
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value { font-size: 20px; font-weight: bold; color: #667eea; }
+        .stat-label { font-size: 12px; color: #718096; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎰 Tu as gagné !</h1>
+            <div class="solde" id="solde">250 000 000 €</div>
+            <p>Le journal du lendemain ne mentait pas...</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="mois">1</div>
+                <div class="stat-label">Mois écoulé</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="bonheur">50</div>
+                <div class="stat-label">Bonheur %</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="revenus">0</div>
+                <div class="stat-label">€/mois</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">Que fais-tu ce mois-ci ?</h3>
+            <button class="btn btn-primary" onclick="acheterImmo()">
+                🏠 Acheter un appartement (2M€)
+            </button>
+            <button class="btn btn-success" onclick="investirBourse()">
+                📈 Investir en bourse (5M€)
+            </button>
+            <button class="btn btn-danger" onclick="depenser()">
+                🛍️ Shopping compulsif
+            </button>
+            <button class="btn btn-primary" onclick="passerMois()" style="background: #4a5568;">
+                ⏭️ Passer le mois sans rien faire
+            </button>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">Journal de bord</h3>
+            <div class="log" id="log">
+                <div class="log-item">🎉 Janvier 2026 : Tu as gagné 250M€ !</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // État du jeu
+        let game = {
+            solde: 250000000,
+            mois: 1,
+            bonheur: 50,
+            revenusPassifs: 0,
+            immo: [],
+            historique: []
+        };
+        
+        function formatMoney(montant) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR',
+                maximumFractionDigits: 0
+            }).format(montant);
+        }
+        
+        function updateUI() {
+            document.getElementById('solde').textContent = formatMoney(game.solde);
+            document.getElementById('mois').textContent = game.mois;
+            document.getElementById('bonheur').textContent = game.bonheur;
+            document.getElementById('revenus').textContent = formatMoney(game.revenusPassifs);
+        }
+        
+        function addLog(emoji, text) {
+            const log = document.getElementById('log');
+            const date = new Date(2026, game.mois - 1, 1);
+            const moisNom = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `${emoji} <strong>${moisNom}</strong> : ${text}`;
+            log.insertBefore(item, log.firstChild);
+        }
+        
+        function passerMois() {
+            game.mois++;
+            game.solde += game.revenusPassifs;
+            
+            // Événement aléatoire
+            const events = [
+                "Rien de spécial ce mois-ci.",
+                "Tu as rencontré quelqu'un qui veut 'te parler d'une opportunité'.",
+                "Tes investissements immobiliers ont pris 2% de valeur.",
+                "Un ami te demande un prêt 'juste le temps que je me remette à flot'.",
+                "Tu découvres les plaisirs simples de la liberté financière."
+            ];
+            const evt = events[Math.floor(Math.random() * events.length)];
+            
+            addLog('📅', evt);
+            updateUI();
+        }
+        
+        function acheterImmo() {
+            const prix = 2000000;
+            const rendement = 0.05; // 5% par an
+            
+            if (game.solde >= prix) {
+                game.solde -= prix;
+                const revenuMensuel = Math.floor(prix * rendement / 12);
+                game.revenusPassifs += revenuMensuel;
+                game.bonheur += 5;
+                game.immo.push({ prix, revenuMensuel });
+                
+                addLog('🏠', `Achat d'un appartement pour ${formatMoney(prix)}. Revenu locatif : +${formatMoney(revenuMensuel)}/mois`);
+                passerMois();
+            } else {
+                alert("Tu n'as plus assez d'argent !");
+            }
+        }
+        
+        function investirBourse() {
+            const montant = 5000000;
+            
+            if (game.solde >= montant) {
+                game.solde -= montant;
+                
+                // Rendement aléatoire entre -20% et +30%
+                const rendement = (Math.random() * 0.5) - 0.2;
+                const gain = Math.floor(montant * rendement);
+                game.solde += montant + gain;
+                
+                if (gain > 0) {
+                    game.bonheur += 10;
+                    addLog('📈', `Investissement réussi ! Gain de ${formatMoney(gain)}`);
+                } else {
+                    game.bonheur -= 5;
+                    addLog('📉', `La bourse a chuté... Perte de ${formatMoney(Math.abs(gain))}`);
+                }
+                passerMois();
+            } else {
+                alert("Solde insuffisant !");
+            }
+        }
+        
+        function depenser() {
+            const achats = [
+                { nom: "Ferrari", prix: 300000, bonheur: 15 },
+                { nom: "Rolex", prix: 50000, bonheur: 5 },
+                { nom: "Voyage Maldives", prix: 50000, bonheur: 20 },
+                { nom: "Yacht", prix: 15000000, bonheur: 25 },
+                { nom: "Garde-robe luxe", prix: 100000, bonheur: 8 }
+            ];
+            
+            const achat = achats[Math.floor(Math.random() * achats.length)];
+            
+            if (game.solde >= achat.prix) {
+                game.solde -= achat.prix;
+                game.bonheur = Math.min(100, game.bonheur + achat.bonheur);
+                
+                addLog('🛍️', `Achat : ${achat.nom} pour ${formatMoney(achat.prix)}`);
+                passerMois();
+            } else {
+                alert("Trop cher pour ton budget actuel !");
+            }
+        }
+        
+        // Sauvegarde automatique
+        function sauvegarder() {
+            localStorage.setItem('simulateurLoto', JSON.stringify(game));
+        }
+        
+        function charger() {
+            const sauvegarde = localStorage.getItem('simulateurLoto');
+            if (sauvegarde) {
+                game = JSON.parse(sauvegarde);
+                updateUI();
+            }
+        }
+        
+        // Charger au démarrage
+        charger();
+        
+        // Sauvegarder automatiquement toutes les 10 secondes
+        setInterval(sauvegarder, 10000);
+    </script>
+</body>
+</html>
